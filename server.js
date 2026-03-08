@@ -129,9 +129,13 @@ async function sendFcmPushNotification(fcmToken, payload) {
         body: JSON.stringify(message),
       },
     );
+    const responseText = await response.text();
     console.log(
       `[Push] FCM v1 sent to ${payload.targetId}, Status: ${response.status}`,
     );
+    if (!response.ok) {
+      console.log(`[Push] FCM v1 error body: ${responseText}`);
+    }
   } catch (err) {
     console.error(`[Push] FCM v1 Failed:`, err);
   }
