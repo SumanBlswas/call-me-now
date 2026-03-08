@@ -104,10 +104,22 @@ async function sendFcmPushNotification(fcmToken, payload) {
   }
 
   const fromName = payload.fromName || payload.from || "Unknown";
+  const dataPayload = {
+    type: "call-offer",
+    callId: payload.callId ? String(payload.callId) : undefined,
+    fromId: payload.fromId ? String(payload.fromId) : undefined,
+    fromName: String(fromName),
+    callType: payload.callType ? String(payload.callType) : undefined,
+    sdp: payload.sdp ? String(payload.sdp) : undefined,
+    handle: payload.handle ? String(payload.handle) : undefined,
+  };
+  Object.keys(dataPayload).forEach((key) => {
+    if (dataPayload[key] === undefined) delete dataPayload[key];
+  });
   const message = {
     message: {
       token: fcmToken,
-      data: { ...payload, type: "call-offer", fromName },
+      data: dataPayload,
       android: { priority: "HIGH" },
     },
   };
