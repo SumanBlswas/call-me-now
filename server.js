@@ -76,7 +76,7 @@ async function sendExpoPushNotification(expoPushToken, payload) {
     body: "Tap to answer",
     data: { ...payload, type: "call-offer", fromName },
     priority: "high",
-    channelId: "default",
+    channelId: "incoming-call",
   };
 
   try {
@@ -94,6 +94,20 @@ async function sendExpoPushNotification(expoPushToken, payload) {
     );
   } catch (err) {
     console.error(`[Push] Failed:`, err);
+  }
+}
+
+function sendPushForCall(targetId, payload) {
+  const tokenInfo = tokens.get(targetId);
+  if (!tokenInfo) {
+    console.log(`❌ Signal failed: ${targetId} is offline and has no push token`);
+    return;
+  }
+  console.log(`💤 ${targetId} is offline. Sending Push...`);
+  if (tokenInfo.type === "expo") {
+    sendExpoPushNotification(tokenInfo.token, payload);
+  } else {
+    sendFcmPushNotification(tokenInfo.token, payload);
   }
 }
 
@@ -176,27 +190,17 @@ io.on("connection", (socket) => {
 
   socket.on("signal", (payload) => {
     const targetSocketId = users.get(payload.targetId);
+    const hasLiveSocket =
+      !!targetSocketId && io.sockets.sockets.has(targetSocketId);
 
-    if (targetSocketId) {
+    if (hasLiveSocket) {
       io.to(targetSocketId).emit("signal", payload);
       console.log(
         `✉️ Signal [${payload.type}] sent via Socket -> ${payload.targetId}`,
       );
     } else if (payload.type === "call-offer") {
-      // User is offline, try pushing
-      const tokenInfo = tokens.get(payload.targetId);
-      if (tokenInfo) {
-        console.log(`💤 ${payload.targetId} is offline. Sending Push...`);
-        if (tokenInfo.type === "expo") {
-          sendExpoPushNotification(tokenInfo.token, payload);
-        } else {
-          sendFcmPushNotification(tokenInfo.token, payload);
-        }
-      } else {
-        console.log(
-          `❌ Signal failed: ${payload.targetId} is offline and has no push token`,
-        );
-      }
+      if (targetSocketId) users.delete(payload.targetId);
+      sendPushForCall(payload.targetId, payload);
     }
   });
 
