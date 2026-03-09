@@ -119,17 +119,9 @@ async function sendFcmPushNotification(fcmToken, payload) {
   const message = {
     message: {
       token: fcmToken,
-      notification: {
-        title: `Incoming call from ${fromName}`,
-        body: "Tap to answer",
-      },
       data: dataPayload,
       android: {
         priority: "HIGH",
-        notification: {
-          channel_id: "incoming-call",
-          sound: "default",
-        },
       },
     },
   };
